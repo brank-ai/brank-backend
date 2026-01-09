@@ -1,0 +1,11 @@
+Generic single-database configuration for Alembic.
+
+To create a new migration:
+    alembic revision --autogenerate -m "Description of changes"
+
+To apply migrations:
+    alembic upgrade head
+
+To rollback:
+    alembic downgrade -1
+

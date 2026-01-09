@@ -1,0 +1,152 @@
+"""Main metric service - orchestrates the full pipeline."""
+
+import logging
+import uuid
+from datetime import datetime
+from typing import Dict
+from sqlalchemy.orm import Session
+
+from config import Settings
+from llm_clients.base import LLMClient
+from db.repositories import BrandRepository
+from db.models import TimeProfile
+from utils.timing import Timer
+
+from services.cache_service import check_cache
+from services.prompt_generation_service import generate_prompts
+from services.llm_query_service import query_llms_parallel
+from services.response_processor import process_responses
+from services.metrics_calculator import calculate_and_store_metrics
+
+
+def get_or_compute_metrics(
+    website: str,
+    db_session: Session,
+    llm_clients: Dict[str, LLMClient],
+    settings: Settings,
+    logger: logging.Logger,
+) -> Dict:
+    """Get cached metrics or compute new ones.
+    
+    This is the main entry point for the /metric endpoint.
+    
+    Pipeline:
+    1. Check cache (24h window)
+    2. If stale/missing:
+       a. Generate prompts using ChatGPT
+       b. Query all 4 LLMs with all prompts (parallel)
+       c. Process responses (extract brands, citations)
+       d. Calculate metrics per LLM
+       e. Store metrics and timing
+    3. Return metrics
+    
+    Args:
+        website: Brand website
+        db_session: Database session
+        llm_clients: Dictionary of LLM clients
+        settings: Application settings
+        logger: Logger instance
+        
+    Returns:
+        Dictionary with metrics per LLM
+        
+    Example:
+        {
+            "brand_id": "uuid",
+            "website": "samsung.com",
+            "cached": false,
+            "metrics": {
+                "chatgpt": {...},
+                "gemini": {...},
+                "grok": {...},
+                "perplexity": {...}
+            },
+            "computed_at": "2026-01-09T12:00:00Z"
+        }
+    """
+    request_id = uuid.uuid4()
+    logger.info(f"Processing metrics request for {website} (request_id: {request_id})")
+
+    # Normalize website
+    website = website.lower().strip()
+    if website.startswith(("http://", "https://")):
+        # Extract domain
+        from urllib.parse import urlparse
+
+        parsed = urlparse(website)
+        website = parsed.netloc or parsed.path
+    if website.startswith("www."):
+        website = website[4:]
+
+    # Get or create brand
+    brand_name = website.split(".")[0].capitalize()  # Simple heuristic
+    brand = BrandRepository.get_or_create(db_session, brand_name, website)
+    db_session.commit()
+
+    logger.info(f"Brand: {brand.name} (id: {brand.brand_id})")
+
+    # Step 0: Check cache
+    cached_result = check_cache(db_session, brand.brand_id, 24, logger)
+    if cached_result:
+        return {
+            "brand_id": str(brand.brand_id),
+            "website": website,
+            **cached_result,
+        }
+
+    # Cache miss - run full pipeline
+    logger.info("Starting fresh metric computation")
+
+    timings = {}
+
+    # Step 1: Generate prompts
+    with Timer() as t1:
+        chatgpt = llm_clients["chatgpt"]
+        prompts = generate_prompts(
+            brand.name, website, settings.prompts_n, chatgpt, logger
+        )
+    timings["prompt_generation_time"] = t1.elapsed
+    logger.info(f"Step 1 complete in {t1.elapsed:.2f}s: {len(prompts)} prompts")
+
+    # Step 2: Query all LLMs
+    with Timer() as t2:
+        llm_responses = query_llms_parallel(
+            prompts, llm_clients, settings.llm_timeout_seconds, logger
+        )
+    timings["fetching_llm_response_time"] = t2.elapsed
+    logger.info(f"Step 2 complete in {t2.elapsed:.2f}s: LLM queries")
+
+    # Step 3: Process responses
+    with Timer() as t3:
+        process_responses(db_session, brand.brand_id, llm_responses, llm_clients, logger)
+    timings["processing_response_time"] = t3.elapsed
+    logger.info(f"Step 3 complete in {t3.elapsed:.2f}s: Response processing")
+
+    # Step 4: Calculate metrics
+    with Timer() as t4:
+        metrics = calculate_and_store_metrics(
+            db_session, brand.brand_id, brand.name, list(llm_clients.keys()), logger
+        )
+    timings["metrics_calculation_time"] = t4.elapsed
+    logger.info(f"Step 4 complete in {t4.elapsed:.2f}s: Metrics calculation")
+
+    # Store timing profile
+    profile = TimeProfile(
+        brand_id=brand.brand_id,
+        request_id=request_id,
+        **timings,
+    )
+    db_session.add(profile)
+    db_session.commit()
+
+    total_time = sum(timings.values())
+    logger.info(f"Pipeline complete in {total_time:.2f}s")
+
+    return {
+        "brand_id": str(brand.brand_id),
+        "website": website,
+        "cached": False,
+        "metrics": metrics,
+        "computed_at": datetime.utcnow().isoformat(),
+    }
+
