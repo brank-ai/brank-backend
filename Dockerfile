@@ -51,6 +51,9 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+# Remove .env file if it exists to prevent conflict with Environment Variables
+RUN rm -f .env
+
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \

@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # env_file=".env",  <-- Commented out to force using real environment variables in Cloud Run
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
