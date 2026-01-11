@@ -47,15 +47,16 @@ class PromptRepository:
         return prompt_objs
 
     @staticmethod
-    def get_by_brand(db_session: Session, brand_id: uuid.UUID) -> List[Prompt]:
-        """Get all prompts for a brand.
-        
+    def get_prompt_texts_for_brand(db_session: Session, brand_id: uuid.UUID) -> List[str]:
+        """Get all prompt texts for a brand.
+
         Args:
             db_session: Database session
             brand_id: Brand UUID
-            
+
         Returns:
-            List of Prompt instances
+            List of prompt text strings
         """
-        return db_session.query(Prompt).filter(Prompt.brand_id == brand_id).all()
+        prompts = db_session.query(Prompt.prompt).filter(Prompt.brand_id == brand_id).all()
+        return [p[0] for p in prompts]
 

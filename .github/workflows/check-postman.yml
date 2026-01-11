@@ -1,0 +1,70 @@
+name: Check Postman Collection
+
+on:
+  pull_request:
+    paths:
+      - 'api/routes.py'
+      - 'api/schemas.py'
+      - 'brank-backend.postman_collection.json'
+
+jobs:
+  check-postman:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get full history to compare with base branch
+
+      - name: Get base branch
+        id: get-base
+        run: |
+          echo "base=${{ github.base_ref }}" >> $GITHUB_OUTPUT
+
+      - name: Check if Postman collection is updated
+        run: |
+          echo "===================================="
+          echo "Checking Postman Collection Status"
+          echo "===================================="
+          echo ""
+
+          # Check if API routes were modified in this PR
+          if git diff origin/${{ steps.get-base.outputs.base }}...HEAD --name-only | grep -q "api/routes.py\|api/schemas.py"; then
+            echo "✓ API files (routes.py or schemas.py) were modified in this PR"
+            echo ""
+
+            # Check if Postman collection was also updated
+            if git diff origin/${{ steps.get-base.outputs.base }}...HEAD --name-only | grep -q "brank-backend.postman_collection.json"; then
+              echo "✓ Postman collection was updated"
+              echo ""
+              echo "===================================="
+              echo "✅ PASS: Postman collection is up to date"
+              echo "===================================="
+              exit 0
+            else
+              echo "❌ WARNING: API files modified but Postman collection NOT updated!"
+              echo ""
+              echo "📝 Action Required:"
+              echo "  1. Update brank-backend.postman_collection.json with:"
+              echo "     - New/modified endpoints"
+              echo "     - Updated request/response examples"
+              echo "     - Parameter changes"
+              echo ""
+              echo "  2. Verify JSON is valid (test import in Postman)"
+              echo ""
+              echo "  3. Commit the updated Postman collection to this PR"
+              echo ""
+              echo "===================================="
+              echo "❌ FAIL: Postman collection needs update"
+              echo "===================================="
+              exit 1
+            fi
+          else
+            echo "✓ No changes to API routes detected"
+            echo ""
+            echo "===================================="
+            echo "✅ PASS: No API changes, no Postman update needed"
+            echo "===================================="
+            exit 0
+          fi

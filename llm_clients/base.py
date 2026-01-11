@@ -22,6 +22,12 @@ class LLMAPIError(LLMError):
     pass
 
 
+class LLMRateLimitError(LLMError):
+    """Exception raised when LLM API rate limit is hit."""
+
+    pass
+
+
 class LLMClient(Protocol):
     """Protocol for LLM client implementations.
     

@@ -1,8 +1,9 @@
 """ChatGPT (OpenAI) client implementation."""
 
 import logging
-from openai import OpenAI, OpenAIError, APITimeoutError
-from llm_clients.base import LLMError, LLMTimeoutError, LLMAPIError
+import time
+from openai import OpenAI, OpenAIError, APITimeoutError, RateLimitError
+from llm_clients.base import LLMError, LLMTimeoutError, LLMAPIError, LLMRateLimitError
 from utils.retry import retry_with_backoff
 
 
@@ -32,20 +33,22 @@ class ChatGPTClient:
     )
     def query(self, prompt: str, timeout: int = 30) -> str:
         """Send prompt to ChatGPT and return response.
-        
+
         Args:
             prompt: Question/prompt to send
             timeout: Maximum seconds to wait
-            
+
         Returns:
             Response text from ChatGPT
-            
+
         Raises:
             LLMTimeoutError: If request times out
+            LLMRateLimitError: If rate limit is hit
             LLMAPIError: If API returns an error
         """
+        start_time = time.time()
         try:
-            self.logger.debug(f"Querying ChatGPT with prompt length: {len(prompt)}")
+            self.logger.debug(f"[ChatGPT] Querying with prompt length: {len(prompt)}")
 
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -55,17 +58,36 @@ class ChatGPTClient:
             )
 
             answer = response.choices[0].message.content
-            self.logger.debug(f"ChatGPT response length: {len(answer)}")
+            elapsed = time.time() - start_time
+
+            self.logger.info(
+                f"[ChatGPT] ✓ Query completed in {elapsed:.2f}s | "
+                f"Prompt: {len(prompt)} chars | Response: {len(answer)} chars"
+            )
 
             return answer
 
+        except RateLimitError as e:
+            elapsed = time.time() - start_time
+            self.logger.warning(
+                f"[ChatGPT] ⚠ RATE LIMIT HIT after {elapsed:.2f}s | "
+                f"Error: {str(e)} | "
+                f"Please reduce request rate or upgrade your API plan"
+            )
+            raise LLMRateLimitError(f"ChatGPT rate limit exceeded: {str(e)}") from e
+
         except APITimeoutError as e:
-            self.logger.error(f"ChatGPT timeout: {e}")
+            elapsed = time.time() - start_time
+            self.logger.error(f"[ChatGPT] ✗ Timeout after {elapsed:.2f}s: {e}")
             raise LLMTimeoutError(f"ChatGPT request timed out after {timeout}s") from e
+
         except OpenAIError as e:
-            self.logger.error(f"ChatGPT API error: {e}")
+            elapsed = time.time() - start_time
+            self.logger.error(f"[ChatGPT] ✗ API error after {elapsed:.2f}s: {e}")
             raise LLMAPIError(f"ChatGPT API error: {str(e)}") from e
+
         except Exception as e:
-            self.logger.error(f"Unexpected ChatGPT error: {e}")
+            elapsed = time.time() - start_time
+            self.logger.error(f"[ChatGPT] ✗ Unexpected error after {elapsed:.2f}s: {e}")
             raise LLMError(f"Unexpected error: {str(e)}") from e
 

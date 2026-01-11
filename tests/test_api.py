@@ -9,14 +9,15 @@ from config import Settings
 @pytest.fixture
 def app():
     """Create Flask app for testing."""
-    # Create test settings
+    # Create test settings with fake API keys that pass validation
     test_settings = Settings(
-        chatgpt_api_key="test_key_chatgpt",
-        gemini_api_key="test_key_gemini",
-        grok_api_key="test_key_grok",
-        perplexity_api_key="test_key_perplexity",
+        chatgpt_api_key="sk-proj-abcdef1234567890abcdef1234567890",
+        gemini_api_key="AIzaSyAbCdEf1234567890AbCdEf1234567890",
+        grok_api_key="xai-1234567890abcdefghijklmnopqrstuvwxyz",
+        perplexity_api_key="pplx-1234567890abcdefghijklmnopqrstuvwxyz",
         database_url="sqlite:///:memory:",  # In-memory SQLite for testing
         prompts_n=2,
+        min_llm_count=2,
         flask_env="testing",
         secret_key="test_secret",
         debug=True,

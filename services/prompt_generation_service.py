@@ -1,8 +1,13 @@
 """Prompt generation service using ChatGPT."""
 
 import logging
+import random
+import uuid
 from typing import List
+from sqlalchemy.orm import Session
+
 from llm_clients.base import LLMClient
+from db.repositories import PromptRepository
 
 
 def generate_prompts(
@@ -77,4 +82,66 @@ Now generate {count} questions for {brand_name}:"""
     except Exception as e:
         logger.error(f"Failed to generate prompts: {e}")
         raise
+
+
+def get_or_generate_prompts(
+    db_session: Session,
+    brand_id: uuid.UUID,
+    brand_name: str,
+    website: str,
+    count: int,
+    llm_client: LLMClient,
+    logger: logging.Logger,
+) -> List[str]:
+    """Get existing prompts or generate new ones based on smart selection logic.
+
+    Logic:
+    - If DB has exactly count prompts: use all existing
+    - If DB has < count prompts: use all existing + generate (count - existing)
+    - If DB has > count prompts: randomly sample count from existing
+
+    Args:
+        db_session: Database session
+        brand_id: Brand UUID
+        brand_name: Name of the brand
+        website: Brand website
+        count: Number of prompts needed
+        llm_client: LLM client for generation
+        logger: Logger instance
+
+    Returns:
+        List of prompt texts (length = count)
+    """
+    # Get existing prompts from DB
+    existing_prompts = PromptRepository.get_prompt_texts_for_brand(db_session, brand_id)
+    existing_count = len(existing_prompts)
+
+    logger.info(f"Found {existing_count} existing prompts for {brand_name}, need {count}")
+
+    # Case 1: Exactly the right number - use all
+    if existing_count == count:
+        logger.info(f"Using all {count} existing prompts")
+        return existing_prompts
+
+    # Case 2: More than needed - randomly sample
+    elif existing_count > count:
+        logger.info(f"Randomly sampling {count} from {existing_count} existing prompts")
+        return random.sample(existing_prompts, count)
+
+    # Case 3: Less than needed - use all + generate delta
+    else:
+        delta = count - existing_count
+        logger.info(f"Using {existing_count} existing prompts + generating {delta} new prompts")
+
+        # Generate only the delta
+        new_prompts = generate_prompts(brand_name, website, delta, llm_client, logger)
+
+        # Store new prompts to DB
+        if new_prompts:
+            PromptRepository.create_bulk(db_session, brand_id, new_prompts)
+            db_session.commit()
+            logger.info(f"Stored {len(new_prompts)} new prompts to database")
+
+        # Return all existing + new
+        return existing_prompts + new_prompts
 

@@ -1,4 +1,4 @@
-# brank-backend — Cursor Agent Rules
+# brank-backend — Claude Agent Rules
 
 You are an autonomous coding agent working on brank-backend. Follow these rules before writing any code.
 
@@ -267,7 +267,7 @@ Each of the 4 LLMs returns independent metrics. For a brand with N prompts:
 ### Python Style
 - **Type hints**: Required on all public functions/methods
 - **Formatting**: Black (88 chars), isort for imports
-- **Naming**: 
+- **Naming**:
   - `snake_case` for functions, variables, modules
   - `PascalCase` for classes
   - `UPPER_CASE` for constants
@@ -282,15 +282,15 @@ def calculate_brand_rank(
     logger: Logger
 ) -> float | None:
     """Calculate average rank of brand across LLM responses.
-    
+
     Args:
         brand_name: Name of brand to search for (case-insensitive)
         responses: List of Response objects with brands_list
         logger: Logger instance for debugging
-        
+
     Returns:
         Average rank (1-based) or None if brand never appears
-        
+
     Raises:
         ValueError: If responses list is empty
     """
@@ -308,17 +308,17 @@ class Settings(BaseSettings):
     gemini_api_key: str
     grok_api_key: str
     perplexity_api_key: str
-    
+
     # Pipeline config
     prompts_n: int = 10
-    
+
     # Database
     database_url: str
-    
+
     # Timeouts
     llm_timeout_seconds: int = 30
     max_retries: int = 3
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = False
@@ -389,10 +389,10 @@ def test_brand_rank_calculation():
         Response(brands_list=["Apple", "Samsung"]),
         Response(brands_list=["Samsung", "Google"]),
     ]
-    
+
     # When
     rank = calculate_brand_rank("Samsung", responses)
-    
+
     # Then
     assert rank == 1.5  # (2 + 1) / 2
 ```
@@ -470,11 +470,11 @@ def get_metrics():
     website = request.args.get("website")
     if not website:
         return jsonify({"error": "website parameter required"}), 400
-    
+
     # 2. Get dependencies
     db_session = get_db_session()
     llm_clients = get_llm_clients()
-    
+
     # 3. Call service (no business logic here!)
     try:
         result = metric_service.get_or_compute_metrics(
@@ -497,13 +497,13 @@ def get_or_compute_metrics(
     logger: Logger
 ) -> dict:
     """Get cached metrics or compute new ones."""
-    
+
     # Check cache
     cached = cache_service.get_cached_metrics(website, db_session)
     if cached and not is_stale(cached.updated_at, hours=24):
         logger.info("Returning cached metrics", extra={"brand_id": cached.brand_id})
         return format_response(cached, cached=True)
-    
+
     # Run pipeline
     logger.info("Computing new metrics", extra={"website": website})
     return compute_metrics_pipeline(website, db_session, llm_clients, logger)
@@ -668,4 +668,3 @@ Before writing code, verify:
 - [ ] If I modified API endpoints, I updated the Postman collection
 
 **Remember**: Code quality > speed. Take time to do it right the first time.
-

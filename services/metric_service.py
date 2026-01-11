@@ -13,7 +13,7 @@ from db.models import TimeProfile
 from utils.timing import Timer
 
 from services.cache_service import check_cache
-from services.prompt_generation_service import generate_prompts
+from services.prompt_generation_service import get_or_generate_prompts
 from services.llm_query_service import query_llms_parallel
 from services.response_processor import process_responses
 from services.metrics_calculator import calculate_and_store_metrics
@@ -99,11 +99,22 @@ def get_or_compute_metrics(
 
     timings = {}
 
-    # Step 1: Generate prompts
+    # Step 1: Get or generate prompts (use first available LLM, prefer ChatGPT)
     with Timer() as t1:
-        chatgpt = llm_clients["chatgpt"]
-        prompts = generate_prompts(
-            brand.name, website, settings.prompts_n, chatgpt, logger
+        # Pick an LLM for prompt generation (prefer ChatGPT if available)
+        prompt_generator = None
+        if "chatgpt" in llm_clients:
+            prompt_generator = llm_clients["chatgpt"]
+            logger.info("Using ChatGPT for prompt generation")
+        elif llm_clients:
+            # Use first available LLM
+            prompt_generator = next(iter(llm_clients.values()))
+            logger.info(f"Using {prompt_generator.name} for prompt generation (ChatGPT not available)")
+        else:
+            raise ValueError("No LLM clients available for prompt generation")
+
+        prompts = get_or_generate_prompts(
+            db_session, brand.brand_id, brand.name, website, settings.prompts_n, prompt_generator, logger
         )
     timings["prompt_generation_time"] = t1.elapsed
     logger.info(f"Step 1 complete in {t1.elapsed:.2f}s: {len(prompts)} prompts")
@@ -116,9 +127,9 @@ def get_or_compute_metrics(
     timings["fetching_llm_response_time"] = t2.elapsed
     logger.info(f"Step 2 complete in {t2.elapsed:.2f}s: LLM queries")
 
-    # Step 3: Process responses
+    # Step 3: Process responses (brands/citations already extracted in parallel)
     with Timer() as t3:
-        process_responses(db_session, brand.brand_id, llm_responses, llm_clients, logger)
+        process_responses(db_session, brand.brand_id, llm_responses, logger)
     timings["processing_response_time"] = t3.elapsed
     logger.info(f"Step 3 complete in {t3.elapsed:.2f}s: Response processing")
 

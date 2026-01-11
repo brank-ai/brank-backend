@@ -1,0 +1,215 @@
+{
+  "info": {
+    "name": "Brank Backend API",
+    "description": "Backend API for Brank - Brand visibility metrics across 4 major LLMs (ChatGPT, Gemini, Grok, Perplexity)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Health check endpoint to verify the API is running.\n\n**Response:**\n```json\n{\n  \"status\": \"healthy\"\n}\n```"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"status\": \"healthy\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Brand Metrics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/metric?website={{website}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "metric"
+          ],
+          "query": [
+            {
+              "key": "website",
+              "value": "{{website}}",
+              "description": "Brand website (e.g., samsung.com, apple.com)"
+            }
+          ]
+        },
+        "description": "Get brand visibility metrics across 4 major LLMs.\n\n**Query Parameters:**\n- `website` (required): Brand website (e.g., samsung.com)\n\n**Response Structure:**\n```json\n{\n  \"brand_id\": \"uuid\",\n  \"website\": \"samsung.com\",\n  \"cached\": false,\n  \"metrics\": {\n    \"chatgpt\": {\n      \"brandRank\": 1.75,\n      \"citationsList\": [{\"url\": \"...\", \"percentage\": 80.0}],\n      \"mentionRate\": 0.8,\n      \"sentimentScore\": 75.5\n    },\n    \"gemini\": {...},\n    \"grok\": {...},\n    \"perplexity\": {...}\n  },\n  \"computed_at\": \"2026-01-09T10:30:00Z\"\n}\n```\n\n**Metrics Explained:**\n- `brandRank`: Average position where brand appears (1 = first mention)\n- `citationsList`: Top 5 most-cited URLs with percentage\n- `mentionRate`: Percentage of responses mentioning the brand (0.0-1.0)\n- `sentimentScore`: Sentiment score (0-100, higher = more positive)\n\n**Caching:**\n- Results are cached for 24 hours\n- `cached: true` indicates returned from cache\n- `cached: false` indicates fresh computation\n\n**Status Codes:**\n- 200: Success (may include partial failures for individual LLMs)\n- 400: Missing or invalid website parameter\n- 500: Internal server error"
+      },
+      "response": [
+        {
+          "name": "Success - Samsung",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metric?website=samsung.com",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "metric"
+              ],
+              "query": [
+                {
+                  "key": "website",
+                  "value": "samsung.com"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"brand_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"website\": \"samsung.com\",\n  \"cached\": false,\n  \"metrics\": {\n    \"chatgpt\": {\n      \"brandRank\": 1.75,\n      \"citationsList\": [\n        {\"url\": \"https://samsung.com\", \"percentage\": 80.0},\n        {\"url\": \"https://gsmarena.com/samsung\", \"percentage\": 60.0}\n      ],\n      \"mentionRate\": 0.8,\n      \"sentimentScore\": 75.5\n    },\n    \"gemini\": {\n      \"brandRank\": 2.1,\n      \"citationsList\": [\n        {\"url\": \"https://samsung.com\", \"percentage\": 70.0}\n      ],\n      \"mentionRate\": 0.7,\n      \"sentimentScore\": 72.0\n    },\n    \"grok\": {\n      \"brandRank\": 1.5,\n      \"citationsList\": [\n        {\"url\": \"https://samsung.com\", \"percentage\": 90.0}\n      ],\n      \"mentionRate\": 0.9,\n      \"sentimentScore\": 80.0\n    },\n    \"perplexity\": {\n      \"brandRank\": 1.2,\n      \"citationsList\": [\n        {\"url\": \"https://samsung.com\", \"percentage\": 95.0}\n      ],\n      \"mentionRate\": 0.95,\n      \"sentimentScore\": 85.0\n    }\n  },\n  \"computed_at\": \"2026-01-10T10:30:00Z\"\n}"
+        },
+        {
+          "name": "Success - Cached",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metric?website=apple.com",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "metric"
+              ],
+              "query": [
+                {
+                  "key": "website",
+                  "value": "apple.com"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"brand_id\": \"650e8400-e29b-41d4-a716-446655440001\",\n  \"website\": \"apple.com\",\n  \"cached\": true,\n  \"metrics\": {\n    \"chatgpt\": {\n      \"brandRank\": 1.2,\n      \"citationsList\": [\n        {\"url\": \"https://apple.com\", \"percentage\": 95.0}\n      ],\n      \"mentionRate\": 0.95,\n      \"sentimentScore\": 88.0\n    },\n    \"gemini\": {...},\n    \"grok\": {...},\n    \"perplexity\": {...}\n  },\n  \"computed_at\": \"2026-01-10T08:00:00Z\"\n}"
+        },
+        {
+          "name": "Error - Missing Website",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metric",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "metric"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"error\": \"website parameter is required\"\n}"
+        },
+        {
+          "name": "Error - Internal Server Error",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metric?website=example.com",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "metric"
+              ],
+              "query": [
+                {
+                  "key": "website",
+                  "value": "example.com"
+                }
+              ]
+            }
+          },
+          "status": "Internal Server Error",
+          "code": 500,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"error\": \"Internal server error\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "website",
+      "value": "samsung.com",
+      "type": "string"
+    }
+  ]
+}
