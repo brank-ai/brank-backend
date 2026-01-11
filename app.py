@@ -78,6 +78,9 @@ def create_app(settings: Settings | None = None) -> Flask:
     return app
 
 
+app = create_app()
+
+
 if __name__ == "__main__":
     app = create_app()
     settings = app.config["SETTINGS"]
