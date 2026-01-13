@@ -129,6 +129,7 @@ class TimeProfile(Base):
     fetching_llm_response_time = Column(Float, nullable=False)  # seconds
     processing_response_time = Column(Float, nullable=False)  # seconds
     metrics_calculation_time = Column(Float, nullable=False)  # seconds
+    aggregation_time = Column(Float, nullable=False, default=0.0)  # seconds
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
