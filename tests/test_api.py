@@ -64,18 +64,45 @@ def test_metric_endpoint_success(mock_create_clients, mock_get_metrics, client):
         "perplexity": Mock(),
     }
 
-    # Mock metrics result
+    # Mock metrics result with new aggregated structure
     mock_get_metrics.return_value = {
         "brand_id": "test-uuid",
         "website": "samsung.com",
         "cached": False,
-        "metrics": {
-            "chatgpt": {
-                "brandRank": 1.5,
-                "citationsList": [{"url": "https://samsung.com", "percentage": 80.0}],
-                "mentionRate": 0.8,
-                "sentimentScore": 75.0,
-            }
+        "averageMentionRate": 0.8,
+        "citations": 0.6,
+        "averageSentiment": 75.0,
+        "averageRanking": 2,
+        "mentionRateByLLM": {
+            "chatgpt": 0.8,
+            "gemini": 0.75,
+            "grok": 0.85,
+            "perplexity": 0.8,
+        },
+        "citationsByLLM": {
+            "chatgpt": 0.6,
+            "gemini": 0.55,
+            "grok": 0.65,
+            "perplexity": 0.6,
+        },
+        "citationOverview": {
+            "chatgpt": [{"url": "https://samsung.com", "percentage": 80.0}],
+            "gemini": [{"url": "https://samsung.com", "percentage": 75.0}],
+            "grok": [{"url": "https://samsung.com", "percentage": 85.0}],
+            "perplexity": [{"url": "https://samsung.com", "percentage": 80.0}],
+        },
+        "rankingOverview": {
+            "topBrands": [
+                {"brand": "samsung", "rank": 1.5},
+                {"brand": "apple", "rank": 2.0},
+            ],
+            "currentBrand": {"brand": "Samsung", "rank": 1.5},
+        },
+        "rankByLLMs": {
+            "chatgpt": 1.5,
+            "gemini": 2.0,
+            "grok": 1.3,
+            "perplexity": 1.2,
         },
         "computed_at": "2026-01-09T12:00:00Z",
     }
@@ -86,6 +113,45 @@ def test_metric_endpoint_success(mock_create_clients, mock_get_metrics, client):
     data = response.get_json()
     assert data["brand_id"] == "test-uuid"
     assert data["website"] == "samsung.com"
-    assert "metrics" in data
-    assert "chatgpt" in data["metrics"]
+    assert data["cached"] is False
+    assert data["averageMentionRate"] == 0.8
+    assert data["citations"] == 0.6
+    assert data["averageSentiment"] == 75.0
+    assert data["averageRanking"] == 2
+    assert "mentionRateByLLM" in data
+    assert "chatgpt" in data["mentionRateByLLM"]
+    assert "citationsByLLM" in data
+    assert "citationOverview" in data
+    assert "rankingOverview" in data
+    assert "rankByLLMs" in data
+
+
+@patch("api.routes.get_landing_page_mention_rates")
+def test_landing_page_metrics_endpoint_success(mock_get_landing_page, client):
+    """Test successful /metrics/landingPage endpoint call."""
+    # Mock landing page metrics result
+    mock_get_landing_page.return_value = {
+        "decathlon": 71.0,
+        "leetcode": 23.5,
+        "asics": 45.2,
+        "zerodha": 68.3,
+        "coinbase": 71.0,
+        "nothing": 71.0,
+        "cult.fit": 71.0,
+    }
+
+    response = client.get("/metrics/landingPage")
+    assert response.status_code == 200
+
+    data = response.get_json()
+    assert "decathlon" in data
+    assert "leetcode" in data
+    assert "asics" in data
+    assert "zerodha" in data
+    assert "coinbase" in data
+    assert "nothing" in data
+    assert "cult.fit" in data
+    assert data["decathlon"] == 71.0
+    assert data["leetcode"] == 23.5
+    assert data["asics"] == 45.2
 

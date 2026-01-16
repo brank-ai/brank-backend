@@ -68,12 +68,12 @@ class ResponseRepository:
         db_session: Session, brand_id: uuid.UUID, llm_name: str
     ) -> List[Response]:
         """Get all responses for a brand and specific LLM.
-        
+
         Args:
             db_session: Database session
             brand_id: Brand UUID
             llm_name: LLM name
-            
+
         Returns:
             List of Response instances
         """
@@ -83,6 +83,28 @@ class ResponseRepository:
             db_session.query(Response)
             .join(Prompt)
             .filter(Prompt.brand_id == brand_id, Response.llm_name == llm_name)
+            .all()
+        )
+
+    @staticmethod
+    def get_by_brand(
+        db_session: Session, brand_id: uuid.UUID
+    ) -> List[Response]:
+        """Get all responses for a brand across all LLMs.
+
+        Args:
+            db_session: Database session
+            brand_id: Brand UUID
+
+        Returns:
+            List of Response instances
+        """
+        from db.models import Prompt
+
+        return (
+            db_session.query(Response)
+            .join(Prompt)
+            .filter(Prompt.brand_id == brand_id)
             .all()
         )
 
