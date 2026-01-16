@@ -60,7 +60,7 @@ def get_landing_page_metrics():
     """Get average mention rates for landing page brands.
     
     Returns average mention rate percentages (0-100) for a fixed list of brands:
-    decathlon, leetcode, basics, zerodha, coinbase, nothing, cult.fit
+    decathlon, leetcode, asics, zerodha, coinbase, nothing, cult.fit
     
     Returns:
         JSON response with brand name to percentage mapping

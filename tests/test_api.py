@@ -133,7 +133,7 @@ def test_landing_page_metrics_endpoint_success(mock_get_landing_page, client):
     mock_get_landing_page.return_value = {
         "decathlon": 71.0,
         "leetcode": 23.5,
-        "basics": 45.2,
+        "asics": 45.2,
         "zerodha": 68.3,
         "coinbase": 71.0,
         "nothing": 71.0,
@@ -146,12 +146,12 @@ def test_landing_page_metrics_endpoint_success(mock_get_landing_page, client):
     data = response.get_json()
     assert "decathlon" in data
     assert "leetcode" in data
-    assert "basics" in data
+    assert "asics" in data
     assert "zerodha" in data
     assert "coinbase" in data
     assert "nothing" in data
     assert "cult.fit" in data
     assert data["decathlon"] == 71.0
     assert data["leetcode"] == 23.5
-    assert data["basics"] == 45.2
+    assert data["asics"] == 45.2
 

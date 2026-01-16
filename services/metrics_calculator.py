@@ -379,6 +379,7 @@ def aggregate_metrics_across_llms(
 
     mention_rate_by_llm = {}
     citations_by_llm = {}
+    sentiment_score_by_llm = {}
     citation_overview = {}
     rank_by_llms = {}
 
@@ -388,11 +389,13 @@ def aggregate_metrics_across_llms(
             # Failed LLM - use default values
             mention_rate_by_llm[llm_name] = 0.0
             citations_by_llm[llm_name] = 0.0
+            sentiment_score_by_llm[llm_name] = 50.0
             citation_overview[llm_name] = []
         else:
             # Successful LLM - use actual values
             mention_rate_by_llm[llm_name] = metrics.get("mentionRate", 0.0)
             citations_by_llm[llm_name] = metrics.get("brandDomainCitationRate", 0.0)
+            sentiment_score_by_llm[llm_name] = metrics.get("sentimentScore", 50.0)
             citation_overview[llm_name] = metrics.get("citationsList", [])
 
             # Collect for averages (only from successful LLMs, only if not None)
@@ -448,6 +451,7 @@ def aggregate_metrics_across_llms(
         "averageRanking": avg_ranking,
         "mentionRateByLLM": mention_rate_by_llm,
         "citationsByLLM": citations_by_llm,
+        "sentimentScoreByLLM": sentiment_score_by_llm,
         "citationOverview": citation_overview,
         "rankingOverview": ranking_overview,
         "rankByLLMs": rank_by_llms,

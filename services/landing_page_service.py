@@ -11,7 +11,7 @@ from db.repositories import MetricsRepository
 LANDING_PAGE_BRANDS = [
     "decathlon",
     "leetcode",
-    "basics",
+    "asics",
     "zerodha",
     "coinbase",
     "nothing",
@@ -42,7 +42,7 @@ def get_landing_page_mention_rates(
         {
             "decathlon": 71.0,
             "leetcode": 23.5,
-            "basics": 45.2,
+            "asics": 45.2,
             ...
         }
     """
