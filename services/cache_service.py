@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from datetime import datetime
 from sqlalchemy.orm import Session
 
@@ -10,23 +10,33 @@ from db.repositories import MetricsRepository
 
 
 def check_cache(
-    db_session: Session, brand_id: uuid.UUID, hours: int, logger: logging.Logger
+    db_session: Session,
+    brand_id: uuid.UUID,
+    active_llm_names: List[str],
+    hours: int,
+    logger: logging.Logger,
 ) -> Optional[Dict]:
     """Check if brand has fresh cached metrics.
     
     Args:
         db_session: Database session
         brand_id: Brand UUID
+        active_llm_names: List of currently active LLM names to check
         hours: Number of hours to consider "fresh" (typically 24)
         logger: Logger instance
         
     Returns:
         Dictionary with metrics per LLM if cache is fresh, None otherwise
     """
-    logger.info(f"Checking cache for brand {brand_id} (freshness: {hours}h)")
+    logger.info(
+        f"Checking cache for brand {brand_id} (freshness: {hours}h, "
+        f"active LLMs: {active_llm_names})"
+    )
 
-    # Check if all 4 LLMs have fresh metrics
-    if not MetricsRepository.has_fresh_cache(db_session, brand_id, hours):
+    # Check if all active LLMs have fresh metrics
+    if not MetricsRepository.has_fresh_cache(
+        db_session, brand_id, active_llm_names, hours
+    ):
         logger.info("Cache miss or stale - need to recompute")
         return None
 

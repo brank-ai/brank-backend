@@ -125,3 +125,33 @@ def test_metric_endpoint_success(mock_create_clients, mock_get_metrics, client):
     assert "rankingOverview" in data
     assert "rankByLLMs" in data
 
+
+@patch("api.routes.get_landing_page_mention_rates")
+def test_landing_page_metrics_endpoint_success(mock_get_landing_page, client):
+    """Test successful /metrics/landingPage endpoint call."""
+    # Mock landing page metrics result
+    mock_get_landing_page.return_value = {
+        "decathlon": 71.0,
+        "leetcode": 23.5,
+        "basics": 45.2,
+        "zerodha": 68.3,
+        "coinbase": 71.0,
+        "nothing": 71.0,
+        "cult.fit": 71.0,
+    }
+
+    response = client.get("/metrics/landingPage")
+    assert response.status_code == 200
+
+    data = response.get_json()
+    assert "decathlon" in data
+    assert "leetcode" in data
+    assert "basics" in data
+    assert "zerodha" in data
+    assert "coinbase" in data
+    assert "nothing" in data
+    assert "cult.fit" in data
+    assert data["decathlon"] == 71.0
+    assert data["leetcode"] == 23.5
+    assert data["basics"] == 45.2
+

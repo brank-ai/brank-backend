@@ -88,8 +88,12 @@ def get_or_compute_metrics(
 
     logger.info(f"Brand: {brand.name} (id: {brand.brand_id})")
 
+    # Get active LLM names from llm_clients dictionary
+    active_llm_names = list(llm_clients.keys())
+    logger.info(f"Active LLMs: {active_llm_names}")
+
     # Step 0: Check cache
-    cached_result = check_cache(db_session, brand.brand_id, 24, logger)
+    cached_result = check_cache(db_session, brand.brand_id, active_llm_names, 24, logger)
     if cached_result:
         # Enrich cached metrics with brand domain citation rate and aggregate
         from db.repositories import ResponseRepository
