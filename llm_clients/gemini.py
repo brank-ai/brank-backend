@@ -1,9 +1,10 @@
 """Gemini (Google) client implementation."""
 
 import logging
+import time
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
-from llm_clients.base import LLMError, LLMTimeoutError, LLMAPIError
+from llm_clients.base import LLMError, LLMTimeoutError, LLMAPIError, LLMRateLimitError
 from utils.retry import retry_with_backoff
 
 
@@ -41,20 +42,22 @@ class GeminiClient:
     )
     def query(self, prompt: str, timeout: int = 30) -> str:
         """Send prompt to Gemini and return response.
-        
+
         Args:
             prompt: Question/prompt to send
             timeout: Maximum seconds to wait (note: Gemini SDK timeout handling is limited)
-            
+
         Returns:
             Response text from Gemini
-            
+
         Raises:
             LLMTimeoutError: If request times out
+            LLMRateLimitError: If rate limit is hit
             LLMAPIError: If API returns an error
         """
+        start_time = time.time()
         try:
-            self.logger.debug(f"Querying Gemini with prompt length: {len(prompt)}")
+            self.logger.debug(f"[Gemini] Querying with prompt length: {len(prompt)}")
 
             response = self.model.generate_content(
                 prompt,
@@ -64,17 +67,36 @@ class GeminiClient:
             )
 
             answer = response.text
-            self.logger.debug(f"Gemini response length: {len(answer)}")
+            elapsed = time.time() - start_time
+
+            self.logger.info(
+                f"[Gemini] ✓ Query completed in {elapsed:.2f}s | "
+                f"Prompt: {len(prompt)} chars | Response: {len(answer)} chars"
+            )
 
             return answer
 
+        except google_exceptions.ResourceExhausted as e:
+            elapsed = time.time() - start_time
+            self.logger.warning(
+                f"[Gemini] ⚠ RATE LIMIT HIT after {elapsed:.2f}s | "
+                f"Error: {str(e)} | "
+                f"Please reduce request rate or upgrade your API plan"
+            )
+            raise LLMRateLimitError(f"Gemini rate limit exceeded: {str(e)}") from e
+
         except google_exceptions.DeadlineExceeded as e:
-            self.logger.error(f"Gemini timeout: {e}")
+            elapsed = time.time() - start_time
+            self.logger.error(f"[Gemini] ✗ Timeout after {elapsed:.2f}s: {e}")
             raise LLMTimeoutError(f"Gemini request timed out after {timeout}s") from e
+
         except google_exceptions.GoogleAPIError as e:
-            self.logger.error(f"Gemini API error: {e}")
+            elapsed = time.time() - start_time
+            self.logger.error(f"[Gemini] ✗ API error after {elapsed:.2f}s: {e}")
             raise LLMAPIError(f"Gemini API error: {str(e)}") from e
+
         except Exception as e:
-            self.logger.error(f"Unexpected Gemini error: {e}")
+            elapsed = time.time() - start_time
+            self.logger.error(f"[Gemini] ✗ Unexpected error after {elapsed:.2f}s: {e}")
             raise LLMError(f"Unexpected error: {str(e)}") from e
 

@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16
+    container_name: brank-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: brank_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: brank-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/brank_db
+
+      # LLM API Keys (set these in .env file)
+      CHATGPT_API_KEY: ${CHATGPT_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GROK_API_KEY: ${GROK_API_KEY}
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY}
+
+      # Pipeline Configuration
+      PROMPTS_N: ${PROMPTS_N:-10}
+      MIN_LLM_COUNT: ${MIN_LLM_COUNT:-2}
+
+      # Timeouts and Retries
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-30}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      RETRY_MIN_WAIT: ${RETRY_MIN_WAIT:-2}
+      RETRY_MAX_WAIT: ${RETRY_MAX_WAIT:-10}
+
+      # Flask
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      DEBUG: "False"
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./alembic:/app/alembic
+
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

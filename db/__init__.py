@@ -9,13 +9,21 @@ Base = declarative_base()
 
 def create_engine_from_url(database_url: str):
     """Create SQLAlchemy engine from database URL.
-    
+
     Args:
         database_url: Database connection string
-        
+
     Returns:
         SQLAlchemy Engine instance
     """
+    # SQLite doesn't support pooling parameters
+    if database_url.startswith("sqlite"):
+        return sa_create_engine(
+            database_url,
+            echo=False,
+        )
+
+    # PostgreSQL/MySQL with connection pooling
     return sa_create_engine(
         database_url,
         pool_pre_ping=True,  # Verify connections before using

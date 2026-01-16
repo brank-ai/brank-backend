@@ -1,0 +1,73 @@
+name: Check Database Migrations
+
+on:
+  pull_request:
+    paths:
+      - 'db/models.py'
+      - 'alembic/versions/**'
+
+jobs:
+  check-migrations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get full history to compare with base branch
+
+      - name: Get base branch
+        id: get-base
+        run: |
+          echo "base=${{ github.base_ref }}" >> $GITHUB_OUTPUT
+
+      - name: Check if migrations are needed
+        run: |
+          echo "===================================="
+          echo "Checking Database Migration Status"
+          echo "===================================="
+          echo ""
+
+          # Check if db/models.py was modified in this PR
+          if git diff origin/${{ steps.get-base.outputs.base }}...HEAD --name-only | grep -q "db/models.py"; then
+            echo "✓ db/models.py was modified in this PR"
+            echo ""
+
+            # Check if a new migration file was added in alembic/versions/
+            if git diff origin/${{ steps.get-base.outputs.base }}...HEAD --name-only | grep -q "alembic/versions/.*\.py$"; then
+              echo "✓ Migration file detected in alembic/versions/"
+              echo ""
+              echo "Migration files added:"
+              git diff origin/${{ steps.get-base.outputs.base }}...HEAD --name-only | grep "alembic/versions/.*\.py$"
+              echo ""
+              echo "===================================="
+              echo "✅ PASS: Migration exists for schema changes"
+              echo "===================================="
+              exit 0
+            else
+              echo "❌ ERROR: db/models.py was modified but NO migration file was added!"
+              echo ""
+              echo "📝 Action Required:"
+              echo "  1. Generate a migration:"
+              echo "     uv run alembic revision --autogenerate -m 'descriptive message'"
+              echo ""
+              echo "  2. Review the generated file in alembic/versions/"
+              echo ""
+              echo "  3. Apply the migration to test it:"
+              echo "     uv run alembic upgrade head"
+              echo ""
+              echo "  4. Commit the migration file to this PR"
+              echo ""
+              echo "===================================="
+              echo "❌ FAIL: Missing migration file"
+              echo "===================================="
+              exit 1
+            fi
+          else
+            echo "✓ No changes to db/models.py detected"
+            echo ""
+            echo "===================================="
+            echo "✅ PASS: No schema changes, no migration needed"
+            echo "===================================="
+            exit 0
+          fi

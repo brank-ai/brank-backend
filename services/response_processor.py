@@ -5,31 +5,29 @@ import uuid
 from typing import List, Dict
 from sqlalchemy.orm import Session
 
-from llm_clients.base import LLMClient
 from db.repositories import PromptRepository, ResponseRepository
-from extractors import extract_brands_and_citations
 
 
 def process_responses(
     db_session: Session,
     brand_id: uuid.UUID,
     llm_responses: Dict[str, List[Dict]],
-    llm_clients: Dict[str, LLMClient],
     logger: logging.Logger,
 ) -> None:
     """Process LLM responses and store in database.
-    
+
     For each response:
     1. Create prompt record
-    2. Extract brands list (ordered) using LLM
-    3. Extract citations list
-    4. Store response record
-    
+    2. Store response record with pre-extracted brands and citations
+
+    Note: Brands and citations are already extracted in parallel during
+    the LLM query phase, so we just need to store the data.
+
     Args:
         db_session: Database session
         brand_id: Brand UUID
         llm_responses: Dictionary mapping llm_name to list of responses
-        llm_clients: Dictionary of LLM clients for brand extraction
+                      Each response contains pre-extracted brands_list and citation_list
         logger: Logger instance
     """
     logger.info("Processing LLM responses")
@@ -43,6 +41,8 @@ def process_responses(
         for response_data in responses:
             prompt_text = response_data["prompt"]
             answer = response_data["answer"]
+            brands_list = response_data["brands_list"]
+            citation_list = response_data["citation_list"]
             error = response_data["error"]
 
             # Skip failed responses
@@ -57,15 +57,8 @@ def process_responses(
             else:
                 prompt = prompt_cache[prompt_text]
 
-            # Extract brands and citations
+            # Store response with pre-extracted brands and citations
             try:
-                # Use the same LLM that generated the response (single call for both)
-                llm_client = llm_clients[llm_name]
-                brands_list, citation_list = extract_brands_and_citations(
-                    answer, llm_client, logger
-                )
-
-                # Store response
                 ResponseRepository.create(
                     db_session=db_session,
                     prompt_id=prompt.prompt_id,
@@ -81,7 +74,7 @@ def process_responses(
                 )
 
             except Exception as e:
-                logger.error(f"Failed to process response from {llm_name}: {e}")
+                logger.error(f"Failed to store response from {llm_name}: {e}")
                 continue
 
     # Commit all at once

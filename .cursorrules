@@ -511,16 +511,144 @@ def get_or_compute_metrics(
 
 ---
 
+## API Documentation (CRITICAL)
+
+**ALWAYS update Postman collection when you modify API endpoints!**
+
+### When to Update Postman Collection
+Any time you change API routes in `api/routes.py` or add new routes:
+- Add new endpoints
+- Modify existing endpoint paths or methods
+- Change request parameters (query, body, headers)
+- Modify response structure
+- Add/remove status codes
+- Update error responses
+
+### Postman Collection Location
+File: `brank-backend.postman_collection.json`
+
+### What to Update
+1. **New Endpoint**: Add new item to `item[]` array with:
+   - Request details (method, URL, headers, body)
+   - Description with parameters and response structure
+   - Example responses for success and error cases
+
+2. **Modified Endpoint**: Update existing item:
+   - URL parameters
+   - Request/response examples
+   - Description
+
+3. **Response Changes**: Update example responses in `response[]` array
+
+4. **Variables**: Update collection variables if new parameters added
+
+### Update Checklist
+- [ ] Added/updated request in Postman collection
+- [ ] Added description with parameter details
+- [ ] Added example success responses (200, 201, etc.)
+- [ ] Added example error responses (400, 404, 500, etc.)
+- [ ] Updated collection variables if needed
+- [ ] Tested import in Postman to verify JSON is valid
+
+**⚠️ NEVER modify API endpoints without updating the Postman collection!**
+
+**Note:** A GitHub workflow (`.github/workflows/check-postman.yml`) will automatically validate that the Postman collection is updated when API files change.
+
+---
+
+## Database Migrations (CRITICAL)
+
+**ALWAYS create a migration when you modify database schema!**
+
+### When to Create Migrations
+Any time you change `db/models.py`:
+- Add/remove/modify columns
+- Add/remove tables
+- Change column types, constraints, or indexes
+- Modify relationships
+
+### Migration Workflow (4 Steps)
+
+1. **Edit the models** in `db/models.py`
+2. **Generate migration**:
+   ```bash
+   uv run alembic revision --autogenerate -m "descriptive message"
+   ```
+3. **Review the generated file** in `alembic/versions/` - ensure it's correct
+4. **Apply the migration**:
+   ```bash
+   uv run alembic upgrade head
+   ```
+
+### Migration Best Practices
+- **Descriptive messages**: Use clear descriptions like "add user_email column to brands" not "update schema"
+- **Review before applying**: Always check the auto-generated migration file
+- **One logical change per migration**: Don't bundle unrelated schema changes
+- **Test rollback**: Verify `downgrade()` works if you need to undo changes
+
+### Example Migration Message
+```bash
+# Good
+uv run alembic revision --autogenerate -m "add status column to responses table"
+
+# Bad
+uv run alembic revision --autogenerate -m "update db"
+```
+
+**⚠️ NEVER modify the database schema without creating a migration!**
+
+**Note:** A GitHub workflow (`.github/workflows/check-migrations.yml`) will automatically validate that migrations are included when `db/models.py` changes.
+
+---
+
+## Testing & Quality Checks (CRITICAL)
+
+**GitHub workflows automatically run on every PR:**
+
+1. **`.github/workflows/run-tests.yml`** - Runs all tests
+   - Sets up PostgreSQL test database
+   - Runs pytest with coverage
+   - Runs linting (Black, isort)
+   - Runs type checking (mypy)
+   - **PR will be blocked if tests fail**
+
+2. **`.github/workflows/check-migrations.yml`** - Validates migrations
+   - Checks if migration files are included with schema changes
+
+3. **`.github/workflows/check-postman.yml`** - Validates API docs
+   - Checks if Postman collection is updated with API changes
+
+### Before Creating PR
+```bash
+# Run tests locally
+uv run pytest -v
+
+# Format code
+uv run black .
+uv run isort .
+
+# Type check
+uv run mypy .
+
+# Generate migration if needed
+uv run alembic revision --autogenerate -m "description"
+uv run alembic upgrade head
+```
+
+---
+
 ## Don'ts (Never Do This)
 
-❌ Put business logic in Flask routes  
-❌ Use global variables for DB connections or HTTP clients  
-❌ Hardcode API keys, URLs, or configuration  
-❌ Swallow exceptions without logging  
-❌ Make network calls without timeouts  
-❌ Commit without type hints or tests  
-❌ Use `import *`  
-❌ Create new patterns if existing ones work  
+❌ Put business logic in Flask routes
+❌ Use global variables for DB connections or HTTP clients
+❌ Hardcode API keys, URLs, or configuration
+❌ Swallow exceptions without logging
+❌ Make network calls without timeouts
+❌ Commit without type hints or tests
+❌ Use `import *`
+❌ Create new patterns if existing ones work
+❌ Modify db/models.py without creating a migration
+❌ Modify API endpoints without updating Postman collection
 
 ---
 
@@ -536,6 +664,8 @@ Before writing code, verify:
 - [ ] I'm considering performance (timeouts, retries, parallelism)
 - [ ] I'm logging important operations
 - [ ] I'm not hardcoding configuration
+- [ ] If I modified db/models.py, I created and applied a migration
+- [ ] If I modified API endpoints, I updated the Postman collection
 
 **Remember**: Code quality > speed. Take time to do it right the first time.
 
