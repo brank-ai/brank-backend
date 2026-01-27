@@ -45,13 +45,21 @@ jobs:
 
       - name: Deploy and Run Migrations
         run: |
+          # Get Cloud SQL instance connection name
+          INSTANCE_CONNECTION_NAME=$(gcloud sql instances describe brank-db-instance --project=${{ env.PROJECT_ID }} --format="value(connectionName)")
+
+          # Construct DATABASE_URL for Cloud Run (Unix Socket)
+          DATABASE_URL="postgresql+psycopg2://postgres:postgres@/brank_db?host=/cloudsql/${INSTANCE_CONNECTION_NAME}"
+
           # 1. Deploy the Cloud Run Job
           gcloud run jobs deploy migrate-job \
             --image "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" \
             --region ${{ env.REGION }} \
             --command "alembic" \
             --args "upgrade,head" \
-            --service-account ${{ env.SERVICE_ACCOUNT }}
+            --service-account ${{ env.SERVICE_ACCOUNT }} \
+            --set-env-vars="DATABASE_URL=${DATABASE_URL}" \
+            --add-cloudsql-instances="${INSTANCE_CONNECTION_NAME}"
 
           # 2. Execute the Job and wait for completion
           gcloud run jobs execute migrate-job --region ${{ env.REGION }} --wait
