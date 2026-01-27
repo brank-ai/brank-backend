@@ -59,7 +59,7 @@ jobs:
             --args "upgrade,head" \
             --service-account ${{ env.SERVICE_ACCOUNT }} \
             --set-env-vars="DATABASE_URL=${DATABASE_URL}" \
-            --add-cloudsql-instances="${INSTANCE_CONNECTION_NAME}"
+            --set-cloudsql-instances="${INSTANCE_CONNECTION_NAME}"
 
           # 2. Execute the Job and wait for completion
           gcloud run jobs execute migrate-job --region ${{ env.REGION }} --wait
