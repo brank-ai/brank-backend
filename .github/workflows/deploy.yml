@@ -43,10 +43,23 @@ jobs:
           docker build -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" .
           docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
 
+      - name: Deploy and Run Migrations
+        run: |
+          # 1. Deploy the Cloud Run Job
+          gcloud run jobs deploy migrate-job \
+            --image "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" \
+            --region ${{ env.REGION }} \
+            --command "alembic" \
+            --args "upgrade,head" \
+            --service-account ${{ env.SERVICE_ACCOUNT }}
+
+          # 2. Execute the Job and wait for completion
+          gcloud run jobs execute migrate-job --region ${{ env.REGION }} --wait
+
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-          flags: "--allow-unauthenticated"
+          flags: "--allow-unauthenticated --memory 4Gi --min-instances 1"

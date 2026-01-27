@@ -14,7 +14,7 @@ load_dotenv()
 
 # Import Base and all models
 from db import Base
-from db.models import Brand, Prompt, Response, Metric, TimeProfile  # noqa: F401
+from db.models import Brand, Prompt, Response, Metric, TimeProfile, BrandInsightRequest  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

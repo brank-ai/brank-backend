@@ -272,6 +272,174 @@
           "body": "{\n  \"error\": \"Internal server error\"\n}"
         }
       ]
+    },
+    {
+      "name": "Create Brand Insight Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"brand_name\": \"Nike\",\n  \"email\": \"user@example.com\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/brand-insight-request",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "brand-insight-request"
+          ]
+        },
+        "description": "Record a brand insight request from the landing page modal.\n\n**Request Body (JSON):**\n- `brand_name` (required): Name of the brand\n- `email` (required): User's email address\n\n**Response Structure:**\n```json\n{\n  \"message\": \"Brand insight request recorded successfully\",\n  \"request_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}\n```\n\n**Status Codes:**\n- 201: Created successfully\n- 400: Missing required fields\n- 500: Internal server error"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand_name\": \"Nike\",\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/brand-insight-request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brand-insight-request"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"message\": \"Brand insight request recorded successfully\",\n  \"request_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+        },
+        {
+          "name": "Error - Missing Brand Name",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/brand-insight-request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brand-insight-request"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"error\": \"brand_name is required\"\n}"
+        },
+        {
+          "name": "Error - Missing Email",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand_name\": \"Nike\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/brand-insight-request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brand-insight-request"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"error\": \"email is required\"\n}"
+        },
+        {
+          "name": "Error - Internal Server Error",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand_name\": \"Nike\",\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/brand-insight-request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brand-insight-request"
+              ]
+            }
+          },
+          "status": "Internal Server Error",
+          "code": 500,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"error\": \"Internal server error\"\n}"
+        }
+      ]
     }
   ],
   "variable": [

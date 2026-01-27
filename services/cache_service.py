@@ -29,19 +29,19 @@ def check_cache(
         Dictionary with metrics per LLM if cache is fresh, None otherwise
     """
     logger.info(
-        f"Checking cache for brand {brand_id} (freshness: {hours}h, "
-        f"active LLMs: {active_llm_names})"
+        f"Checking cache for brand {brand_id} (active LLMs: {active_llm_names})"
     )
 
-    # Check if all active LLMs have fresh metrics
-    if not MetricsRepository.has_fresh_cache(
-        db_session, brand_id, active_llm_names, hours
-    ):
-        logger.info("Cache miss or stale - need to recompute")
-        return None
+    # Fetch all metrics for the brand (regardless of age)
+    metrics = MetricsRepository.get_by_brand(db_session, brand_id)
 
-    # Fetch fresh metrics
-    metrics = MetricsRepository.get_fresh_metrics(db_session, brand_id, hours)
+    # Check if all active LLMs have metrics
+    llm_names = {m.llm_name for m in metrics}
+    required_llms = set(active_llm_names)
+
+    if not required_llms.issubset(llm_names):
+        logger.info("Cache miss - some LLMs missing metrics, need to recompute")
+        return None
 
     # Convert to response format
     result = {}

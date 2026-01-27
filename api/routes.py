@@ -4,6 +4,7 @@ import logging
 from flask import Blueprint, request, jsonify, g, current_app
 
 from services import get_or_compute_metrics, get_landing_page_mention_rates
+from db.models import BrandInsightRequest
 from llm_clients import create_llm_clients
 from utils.logger import get_logger
 
@@ -83,5 +84,56 @@ def get_landing_page_metrics():
 
     except Exception as e:
         logger.exception(f"Failed to fetch landing page metrics: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@api_bp.route("/brand-insight-request", methods=["POST"])
+def create_brand_insight_request():
+    """Record a brand insight request from the landing page modal.
+
+    Request Body (JSON):
+        brand_name (str): Name of the brand (required)
+        email (str): User's email address (required)
+
+    Returns:
+        JSON response with success message and request_id
+
+    Status Codes:
+        201: Created successfully
+        400: Missing required fields
+        500: Internal server error
+    """
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Request body is required"}), 400
+
+    brand_name = data.get("brand_name")
+    email = data.get("email")
+
+    if not brand_name:
+        return jsonify({"error": "brand_name is required"}), 400
+    if not email:
+        return jsonify({"error": "email is required"}), 400
+
+    try:
+        db_session = g.db_session
+
+        insight_request = BrandInsightRequest(
+            brand_name=brand_name,
+            email=email,
+        )
+        db_session.add(insight_request)
+        db_session.commit()
+
+        logger.info(f"Brand insight request recorded for {brand_name} ({email})")
+
+        return jsonify({
+            "message": "Brand insight request recorded successfully",
+            "request_id": str(insight_request.request_id),
+        }), 201
+
+    except Exception as e:
+        logger.exception(f"Failed to record brand insight request: {e}")
         return jsonify({"error": "Internal server error"}), 500
 

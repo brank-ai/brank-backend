@@ -138,3 +138,17 @@ class TimeProfile(Base):
     def __repr__(self) -> str:
         return f"<TimeProfile(profile_id={self.profile_id}, brand_id={self.brand_id}, request_id={self.request_id})>"
 
+
+class BrandInsightRequest(Base):
+    """Brand insight request from the landing page modal."""
+
+    __tablename__ = "brand_insight_requests"
+
+    request_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    brand_name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<BrandInsightRequest(request_id={self.request_id}, brand_name={self.brand_name}, email={self.email})>"
+
