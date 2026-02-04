@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
+    # Slack (optional - notifications disabled if empty)
+    slack_webhook_url: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
