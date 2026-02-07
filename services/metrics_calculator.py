@@ -264,25 +264,24 @@ def calculate_sentiment_score(
 
 
 def calculate_brand_domain_citation_rate(
-    website: str, responses: List[Response], logger: logging.Logger
+    brand_name: str, responses: List[Response], logger: logging.Logger
 ) -> float:
-    """Calculate percentage of responses citing the brand's domain.
+    """Calculate percentage of responses citing a domain containing the brand name.
 
     Args:
-        website: Brand website (e.g., "samsung.com")
+        brand_name: Brand name (e.g., "Coinbase")
         responses: List of Response objects
         logger: Logger instance
 
     Returns:
-        Citation rate from 0.0 to 1.0
+        Citation rate from 0.0 to 100.0
     """
-    brand_domain = extract_domain(f"https://{website}")
+    brand_lower = brand_name.lower()
     citations_with_brand = 0
 
     for response in responses:
-        # Check if brand's domain appears in citation list
         for url in response.citation_list:
-            if extract_domain(url) == brand_domain:
+            if brand_lower in url.lower():
                 citations_with_brand += 1
                 break  # Count each response only once
 
