@@ -25,16 +25,17 @@ class BrandRepository:
 
     @staticmethod
     def get_by_website(db_session: Session, website: str) -> Optional[Brand]:
-        """Get brand by website.
-        
+        """Get brand by website (case-insensitive).
+
         Args:
             db_session: Database session
             website: Brand website
-            
+
         Returns:
             Brand instance or None if not found
         """
-        return db_session.query(Brand).filter(Brand.website == website).first()
+        from sqlalchemy import func
+        return db_session.query(Brand).filter(func.lower(Brand.website) == website.lower()).first()
 
     @staticmethod
     def create(db_session: Session, name: str, website: str) -> Brand:
@@ -69,7 +70,7 @@ class BrandRepository:
 
     @staticmethod
     def get_or_create(db_session: Session, name: str, website: str) -> Brand:
-        """Get existing brand by name (case-insensitive) or create new one.
+        """Get existing brand by website (case-insensitive) or create new one.
 
         Args:
             db_session: Database session
@@ -79,7 +80,7 @@ class BrandRepository:
         Returns:
             Brand instance (existing or newly created)
         """
-        brand = BrandRepository.get_by_name(db_session, name)
+        brand = BrandRepository.get_by_website(db_session, website)
         if brand is None:
             brand = BrandRepository.create(db_session, name, website)
         return brand

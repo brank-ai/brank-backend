@@ -70,11 +70,20 @@ def get_or_compute_metrics(
     request_id = uuid.uuid4()
     logger.info(f"Processing metrics request for {website} (request_id: {request_id})")
 
-    # Treat website param as brand name
-    brand_name = website.strip()
+    # Normalize website input
+    website = website.lower().strip()
+    if website.startswith(("http://", "https://")):
+        from urllib.parse import urlparse
+        parsed = urlparse(website)
+        website = parsed.netloc or parsed.path
+    if website.startswith("www."):
+        website = website[4:]
 
-    # Get or create brand (case-insensitive lookup by name)
-    brand = BrandRepository.get_or_create(db_session, brand_name, brand_name.lower())
+    # Derive brand name from website for new brands (e.g. "browserstack.com" -> "Browserstack")
+    brand_name = website.split(".")[0].capitalize()
+
+    # Look up by website (case-insensitive), create if not found
+    brand = BrandRepository.get_or_create(db_session, brand_name, website)
     db_session.commit()
 
     logger.info(f"Brand: {brand.name} (id: {brand.brand_id})")
