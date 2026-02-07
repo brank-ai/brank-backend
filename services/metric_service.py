@@ -70,20 +70,11 @@ def get_or_compute_metrics(
     request_id = uuid.uuid4()
     logger.info(f"Processing metrics request for {website} (request_id: {request_id})")
 
-    # Normalize website
-    website = website.lower().strip()
-    if website.startswith(("http://", "https://")):
-        # Extract domain
-        from urllib.parse import urlparse
+    # Treat website param as brand name
+    brand_name = website.strip()
 
-        parsed = urlparse(website)
-        website = parsed.netloc or parsed.path
-    if website.startswith("www."):
-        website = website[4:]
-
-    # Get or create brand
-    brand_name = website.split(".")[0].capitalize()  # Simple heuristic
-    brand = BrandRepository.get_or_create(db_session, brand_name, website)
+    # Get or create brand (case-insensitive lookup by name)
+    brand = BrandRepository.get_or_create(db_session, brand_name, brand_name.lower())
     db_session.commit()
 
     logger.info(f"Brand: {brand.name} (id: {brand.brand_id})")
@@ -112,7 +103,7 @@ def get_or_compute_metrics(
                 )
                 if responses:
                     citation_rate = calculate_brand_domain_citation_rate(
-                        website, responses, logger
+                        brand.name, responses, logger
                     )
                     per_llm_metrics[llm_name]["brandDomainCitationRate"] = citation_rate
 
@@ -153,7 +144,7 @@ def get_or_compute_metrics(
             raise ValueError("No LLM clients available for prompt generation")
 
         prompts = get_or_generate_prompts(
-            db_session, brand.brand_id, brand.name, website, settings.prompts_n, prompt_generator, logger
+            db_session, brand.brand_id, brand.name, brand.website, settings.prompts_n, prompt_generator, logger
         )
     timings["prompt_generation_time"] = t1.elapsed
     logger.info(f"Step 1 complete in {t1.elapsed:.2f}s: {len(prompts)} prompts")
@@ -175,7 +166,7 @@ def get_or_compute_metrics(
     # Step 4: Calculate metrics
     with Timer() as t4:
         per_llm_metrics, all_brands_ranking = calculate_and_store_metrics(
-            db_session, brand.brand_id, brand.name, website, list(llm_clients.keys()), logger
+            db_session, brand.brand_id, brand.name, brand.name, list(llm_clients.keys()), logger
         )
     timings["metrics_calculation_time"] = t4.elapsed
     logger.info(f"Step 4 complete in {t4.elapsed:.2f}s: Metrics calculation")

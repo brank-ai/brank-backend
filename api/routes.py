@@ -28,6 +28,7 @@ def get_metrics():
         400: Missing or invalid website parameter
         500: Internal server error
     """
+    # TODO: Rename query parameter from "website" to "brand_name"
     # Validate input
     website = request.args.get("website")
     if not website:
