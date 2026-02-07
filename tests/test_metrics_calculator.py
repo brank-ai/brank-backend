@@ -78,11 +78,11 @@ def test_calculate_brand_domain_citation_rate(sample_responses, mock_logger):
     """Test brand domain citation rate calculation."""
     # samsung.com appears in 2 out of 3 responses
     rate = calculate_brand_domain_citation_rate("samsung.com", sample_responses, mock_logger)
-    assert rate == pytest.approx(0.667, abs=0.01)
+    assert rate == pytest.approx(66.7, abs=0.1)
 
     # apple.com appears in 2 out of 3 responses
     rate = calculate_brand_domain_citation_rate("apple.com", sample_responses, mock_logger)
-    assert rate == pytest.approx(0.667, abs=0.01)
+    assert rate == pytest.approx(66.7, abs=0.1)
 
     # google.com doesn't appear in citations
     rate = calculate_brand_domain_citation_rate("google.com", sample_responses, mock_logger)
@@ -98,19 +98,15 @@ def test_calculate_all_brands_ranking(sample_responses, mock_logger):
     assert "apple" in rankings
     assert "google" in rankings
 
-    # Samsung appears at position 1 in 2 responses: avg = 1.0
-    assert rankings["samsung"] == 1.0
-
-    # Apple appears at positions 2 and 1: avg = 1.5
-    assert rankings["apple"] == 1.5
-
-    # Google appears at positions 3, 2, 2: avg = 2.33
-    assert rankings["google"] == pytest.approx(2.33, abs=0.01)
+    # Strict integer ranks based on sorted avg position
+    # Samsung avg=1.0 -> rank 1, Apple avg=1.5 -> rank 2, Google avg=2.33 -> rank 3
+    assert rankings["samsung"] == 1
+    assert rankings["apple"] == 2
+    assert rankings["google"] == 3
 
     # Rankings should be sorted by rank (ascending)
-    brands_list = list(rankings.keys())
     ranks_list = list(rankings.values())
-    assert ranks_list == sorted(ranks_list)  # Should be in ascending order
+    assert ranks_list == sorted(ranks_list)
 
 
 def test_aggregate_metrics_across_llms(mock_logger):

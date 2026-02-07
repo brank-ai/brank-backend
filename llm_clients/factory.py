@@ -43,21 +43,9 @@ def create_llm_clients(settings: Settings, logger: logging.Logger) -> Dict[str, 
     else:
         logger.warning("⊗ Gemini client skipped (no API key)")
 
-    if settings.grok_api_key and settings.grok_api_key.strip():
-        clients["grok"] = GrokClient(
-            api_key=settings.grok_api_key, logger=logger
-        )
-        logger.info("✓ Grok client created")
-    else:
-        logger.warning("⊗ Grok client skipped (no API key)")
-
-    if settings.perplexity_api_key and settings.perplexity_api_key.strip():
-        clients["perplexity"] = PerplexityClient(
-            api_key=settings.perplexity_api_key, logger=logger
-        )
-        logger.info("✓ Perplexity client created")
-    else:
-        logger.warning("⊗ Perplexity client skipped (no API key)")
+    # Grok and Perplexity disabled — not actively used
+    logger.info("⊗ Grok client disabled")
+    logger.info("⊗ Perplexity client disabled")
 
     logger.info(f"Created {len(clients)}/{4} LLM clients: {list(clients.keys())}")
     return clients

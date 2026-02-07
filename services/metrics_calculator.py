@@ -286,11 +286,11 @@ def calculate_brand_domain_citation_rate(
                 citations_with_brand += 1
                 break  # Count each response only once
 
-    citation_rate = citations_with_brand / len(responses) if responses else 0.0
+    citation_rate = (citations_with_brand / len(responses) * 100) if responses else 0.0
     logger.debug(
-        f"Brand domain citation rate: {citation_rate:.2%} ({citations_with_brand}/{len(responses)})"
+        f"Brand domain citation rate: {citation_rate:.1f}% ({citations_with_brand}/{len(responses)})"
     )
-    return round(citation_rate, 3)
+    return round(citation_rate, 1)
 
 
 def calculate_all_brands_ranking(
@@ -318,7 +318,8 @@ def calculate_all_brands_ranking(
 
     logger.debug(f"Found {len(all_brands)} unique brands across all responses")
 
-    # Calculate average rank for each brand
+    # Calculate average rank for each brand (only include brands mentioned in at least 5% of responses)
+    min_appearances = max(1, int(len(all_responses) * 0.05))
     rankings = {}
     for brand in all_brands:
         ranks = []
@@ -328,14 +329,13 @@ def calculate_all_brands_ranking(
                 rank = normalized_brands.index(brand) + 1
                 ranks.append(rank)
 
-        if ranks:
+        if len(ranks) >= min_appearances:
             avg_rank = sum(ranks) / len(ranks)
             rankings[brand] = round(avg_rank, 2)
 
-    # Sort by rank (ascending - lower rank is better)
-    sorted_rankings = dict(
-        sorted(rankings.items(), key=lambda x: x[1])
-    )
+    # Sort by avg position (ascending - lower is better), then assign strict integer ranks
+    sorted_brands = sorted(rankings.items(), key=lambda x: x[1])
+    sorted_rankings = {brand: position for position, (brand, _) in enumerate(sorted_brands, start=1)}
 
     logger.debug(f"Calculated rankings for {len(sorted_rankings)} brands")
     return sorted_rankings
