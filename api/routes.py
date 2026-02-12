@@ -1,12 +1,17 @@
 """API routes."""
 
 import logging
-from flask import Blueprint, request, jsonify, g, current_app
 
-from services import get_or_compute_metrics, get_landing_page_mention_rates, send_slack_notification
+from flask import Blueprint, current_app, g, jsonify, request
+
 from db.models import BrandInsightRequest
 from db.repositories.prompt_repository import PromptRepository
 from llm_clients import create_llm_clients
+from services import (
+    get_landing_page_mention_rates,
+    get_or_compute_metrics,
+    send_slack_notification,
+)
 from utils.logger import get_logger
 
 api_bp = Blueprint("api", __name__)
@@ -16,13 +21,13 @@ logger = get_logger(__name__)
 @api_bp.route("/metric", methods=["GET"])
 def get_metrics():
     """Get brand metrics across 4 LLMs.
-    
+
     Query Parameters:
         website (str): Brand website (required)
-        
+
     Returns:
         JSON response with metrics per LLM
-        
+
     Status Codes:
         200: Success (includes partial failures)
         400: Missing or invalid website parameter
@@ -61,13 +66,13 @@ def get_metrics():
 @api_bp.route("/metrics/landingPage", methods=["GET"])
 def get_landing_page_metrics():
     """Get average mention rates for landing page brands.
-    
+
     Returns average mention rate percentages (0-100) for a fixed list of brands:
     decathlon, leetcode, asics, zerodha, coinbase, nothing, cult.fit
-    
+
     Returns:
         JSON response with brand name to percentage mapping
-        
+
     Status Codes:
         200: Success
         500: Internal server error
@@ -139,10 +144,15 @@ def create_brand_insight_request():
             logger=logger,
         )
 
-        return jsonify({
-            "message": "Brand insight request recorded successfully",
-            "request_id": str(insight_request.request_id),
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": "Brand insight request recorded successfully",
+                    "request_id": str(insight_request.request_id),
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         logger.exception(f"Failed to record brand insight request: {e}")
@@ -179,7 +189,10 @@ def get_prompts():
 
     # Validate at least one identifier is provided
     if not brand_name and not website:
-        return jsonify({"error": "Either brand_name or website parameter is required"}), 400
+        return (
+            jsonify({"error": "Either brand_name or website parameter is required"}),
+            400,
+        )
 
     # Validate and parse pagination parameters
     try:
@@ -208,12 +221,18 @@ def get_prompts():
             # Look up by brand name (case-insensitive)
             brand_id = PromptRepository.get_brand_id_by_name(db_session, brand_name)
             if not brand_id:
-                return jsonify({"error": f"Brand not found for name: {brand_name}"}), 404
+                return (
+                    jsonify({"error": f"Brand not found for name: {brand_name}"}),
+                    404,
+                )
         elif website:
             # Look up by website (case-insensitive)
             brand_id = PromptRepository.get_brand_id_by_website(db_session, website)
             if not brand_id:
-                return jsonify({"error": f"Brand not found for website: {website}"}), 404
+                return (
+                    jsonify({"error": f"Brand not found for website: {website}"}),
+                    404,
+                )
 
         # Get paginated prompts
         prompts, total = PromptRepository.get_prompts_paginated(
@@ -228,25 +247,36 @@ def get_prompts():
         has_next = page < total_pages
         has_prev = page > 1
 
-        return jsonify({
-            "prompts": [
+        return (
+            jsonify(
                 {
-                    "prompt_id": str(p.prompt_id),
-                    "prompt": p.prompt,
+                    "prompts": [
+                        {
+                            "prompt_id": str(p.prompt_id),
+                            "prompt": p.prompt,
+                            "responses": [
+                                {
+                                    "llm_name": r.llm_name,
+                                    "answer": r.answer,
+                                }
+                                for r in p.responses
+                            ],
+                        }
+                        for p in prompts
+                    ],
+                    "pagination": {
+                        "page": page,
+                        "per_page": per_page,
+                        "total_items": total,
+                        "total_pages": total_pages,
+                        "has_next": has_next,
+                        "has_prev": has_prev,
+                    },
                 }
-                for p in prompts
-            ],
-            "pagination": {
-                "page": page,
-                "per_page": per_page,
-                "total_items": total,
-                "total_pages": total_pages,
-                "has_next": has_next,
-                "has_prev": has_prev,
-            },
-        }), 200
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.exception(f"Failed to fetch prompts: {e}")
         return jsonify({"error": "Internal server error"}), 500
-

@@ -2,10 +2,11 @@
 
 import uuid
 from typing import List, Tuple
-from sqlalchemy import func
-from sqlalchemy.orm import Session
 
-from db.models import Prompt, Brand
+from sqlalchemy import func
+from sqlalchemy.orm import Session, selectinload
+
+from db.models import Brand, Prompt
 
 
 class PromptRepository:
@@ -14,12 +15,12 @@ class PromptRepository:
     @staticmethod
     def create(db_session: Session, brand_id: uuid.UUID, prompt: str) -> Prompt:
         """Create new prompt.
-        
+
         Args:
             db_session: Database session
             brand_id: Brand UUID
             prompt: Prompt text
-            
+
         Returns:
             Created Prompt instance
         """
@@ -33,12 +34,12 @@ class PromptRepository:
         db_session: Session, brand_id: uuid.UUID, prompts: List[str]
     ) -> List[Prompt]:
         """Create multiple prompts.
-        
+
         Args:
             db_session: Database session
             brand_id: Brand UUID
             prompts: List of prompt texts
-            
+
         Returns:
             List of created Prompt instances
         """
@@ -48,7 +49,9 @@ class PromptRepository:
         return prompt_objs
 
     @staticmethod
-    def get_prompt_texts_for_brand(db_session: Session, brand_id: uuid.UUID) -> List[str]:
+    def get_prompt_texts_for_brand(
+        db_session: Session, brand_id: uuid.UUID
+    ) -> List[str]:
         """Get all prompt texts for a brand.
 
         Args:
@@ -58,7 +61,9 @@ class PromptRepository:
         Returns:
             List of prompt text strings
         """
-        prompts = db_session.query(Prompt.prompt).filter(Prompt.brand_id == brand_id).all()
+        prompts = (
+            db_session.query(Prompt.prompt).filter(Prompt.brand_id == brand_id).all()
+        )
         return [p[0] for p in prompts]
 
     @staticmethod
@@ -79,14 +84,23 @@ class PromptRepository:
         Returns:
             Tuple of (list of Prompt objects, total count)
         """
-        query = db_session.query(Prompt).filter(Prompt.brand_id == brand_id)
+        query = (
+            db_session.query(Prompt)
+            .filter(Prompt.brand_id == brand_id)
+            .options(selectinload(Prompt.responses))
+        )
 
         # Get total count
         total = query.count()
 
         # Apply pagination
         offset = (page - 1) * per_page
-        prompts = query.order_by(Prompt.created_at.desc()).offset(offset).limit(per_page).all()
+        prompts = (
+            query.order_by(Prompt.created_at.desc())
+            .offset(offset)
+            .limit(per_page)
+            .all()
+        )
 
         return prompts, total
 
@@ -101,9 +115,11 @@ class PromptRepository:
         Returns:
             Brand UUID or None if not found
         """
-        brand = db_session.query(Brand.brand_id).filter(
-            func.lower(Brand.website) == website.lower()
-        ).first()
+        brand = (
+            db_session.query(Brand.brand_id)
+            .filter(func.lower(Brand.website) == website.lower())
+            .first()
+        )
         return brand[0] if brand else None
 
     @staticmethod
@@ -117,8 +133,9 @@ class PromptRepository:
         Returns:
             Brand UUID or None if not found
         """
-        brand = db_session.query(Brand.brand_id).filter(
-            func.lower(Brand.name) == brand_name.lower()
-        ).first()
+        brand = (
+            db_session.query(Brand.brand_id)
+            .filter(func.lower(Brand.name) == brand_name.lower())
+            .first()
+        )
         return brand[0] if brand else None
-
