@@ -158,37 +158,29 @@ class MetricsRepository:
         return required_llms.issubset(llm_names)
 
     @staticmethod
-    def get_avg_mention_rates_by_brand_names(
+    def get_avg_metrics_by_brand_names(
         db_session: Session, brand_names: List[str]
-    ) -> Dict[str, float]:
-        """Get average mention rates for brands by name.
-        
-        Joins metrics with brands table, filters by brand names (case-insensitive),
-        groups by brand name, and computes average mention_rate.
-        
+    ) -> Dict[str, Dict[str, float]]:
+        """Get average mention rates and sentiment scores for brands by name.
+
         Args:
             db_session: Database session
             brand_names: List of brand names to lookup (case-insensitive)
-            
+
         Returns:
-            Dictionary mapping lowercase brand name to average mention_rate (0.0-1.0)
-            Empty dict if no matches found
-            
-        Example:
-            >>> get_avg_mention_rates_by_brand_names(session, ["Apple", "Samsung"])
-            {"apple": 0.85, "samsung": 0.72}
+            Dictionary mapping lowercase brand name to
+            {"mention_rate": 0.0-1.0, "sentiment_score": 0.0-100.0}
         """
         if not brand_names:
             return {}
 
-        # Normalize brand names to lowercase for case-insensitive matching
         lowercase_names = [name.lower() for name in brand_names]
 
-        # Query: JOIN metrics with brands, filter by names, GROUP BY and compute AVG
         results = (
             db_session.query(
                 func.lower(Brand.name).label("brand_name"),
                 func.avg(Metric.mention_rate).label("avg_mention_rate"),
+                func.avg(Metric.sentiment_score).label("avg_sentiment_score"),
             )
             .join(Metric, Brand.brand_id == Metric.brand_id)
             .filter(func.lower(Brand.name).in_(lowercase_names))
@@ -196,6 +188,11 @@ class MetricsRepository:
             .all()
         )
 
-        # Convert to dictionary
-        return {row.brand_name: float(row.avg_mention_rate) for row in results}
+        return {
+            row.brand_name: {
+                "mention_rate": float(row.avg_mention_rate),
+                "sentiment_score": float(row.avg_sentiment_score),
+            }
+            for row in results
+        }
 
