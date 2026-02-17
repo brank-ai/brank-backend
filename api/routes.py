@@ -8,7 +8,7 @@ from db.models import BrandInsightRequest
 from db.repositories.prompt_repository import PromptRepository
 from llm_clients import create_llm_clients
 from services import (
-    get_landing_page_mention_rates,
+    get_landing_page_metrics,
     get_or_compute_metrics,
     send_slack_notification,
 )
@@ -64,14 +64,14 @@ def get_metrics():
 
 
 @api_bp.route("/metrics/landingPage", methods=["GET"])
-def get_landing_page_metrics():
-    """Get average mention rates for landing page brands.
+def landing_page_metrics():
+    """Get average mention rates and sentiment scores for landing page brands.
 
-    Returns average mention rate percentages (0-100) for a fixed list of brands:
+    Returns mention rate and sentiment score percentages for a fixed list of brands:
     decathlon, leetcode, asics, zerodha, coinbase, nothing, cult.fit
 
     Returns:
-        JSON response with brand name to percentage mapping
+        JSON response with brand name to {mentions, sentiment} mapping
 
     Status Codes:
         200: Success
@@ -82,7 +82,7 @@ def get_landing_page_metrics():
         db_session = g.db_session
 
         # Call service
-        result = get_landing_page_mention_rates(
+        result = get_landing_page_metrics(
             db_session=db_session,
             logger=logger,
         )

@@ -126,18 +126,18 @@ def test_metric_endpoint_success(mock_create_clients, mock_get_metrics, client):
     assert "rankByLLMs" in data
 
 
-@patch("api.routes.get_landing_page_mention_rates")
+@patch("api.routes.get_landing_page_metrics")
 def test_landing_page_metrics_endpoint_success(mock_get_landing_page, client):
     """Test successful /metrics/landingPage endpoint call."""
     # Mock landing page metrics result
     mock_get_landing_page.return_value = {
-        "decathlon": 71.0,
-        "leetcode": 23.5,
-        "asics": 45.2,
-        "zerodha": 68.3,
-        "coinbase": 71.0,
-        "nothing": 71.0,
-        "cult.fit": 71.0,
+        "decathlon": {"mentions": 71.0, "sentiment": 71.0},
+        "leetcode": {"mentions": 23.5, "sentiment": 55.0},
+        "asics": {"mentions": 45.2, "sentiment": 62.3},
+        "zerodha": {"mentions": 68.3, "sentiment": 70.1},
+        "coinbase": {"mentions": 71.0, "sentiment": 71.0},
+        "nothing": {"mentions": 71.0, "sentiment": 71.0},
+        "cult.fit": {"mentions": 71.0, "sentiment": 71.0},
     }
 
     response = client.get("/metrics/landingPage")
@@ -151,7 +151,7 @@ def test_landing_page_metrics_endpoint_success(mock_get_landing_page, client):
     assert "coinbase" in data
     assert "nothing" in data
     assert "cult.fit" in data
-    assert data["decathlon"] == 71.0
-    assert data["leetcode"] == 23.5
-    assert data["asics"] == 45.2
+    assert data["decathlon"]["mentions"] == 71.0
+    assert data["leetcode"]["mentions"] == 23.5
+    assert data["asics"]["sentiment"] == 62.3
 
